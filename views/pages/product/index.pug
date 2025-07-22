@@ -1,0 +1,262 @@
+extends ../../layouts/default.pug
+
+block main
+    .container-custom
+        h1.page-title Danh sách sản phẩm
+
+        // Hiển thị thông báo flash message (nếu có)
+        if messages.success && messages.success.length > 0
+            .alert.alert-success
+                ul
+                    each msg in messages.success
+                        li= msg
+        if messages.error && messages.error.length > 0
+            .alert.alert-danger
+                ul
+                    each msg in messages.error
+                        li= msg
+
+        .box-filter
+            .box-header Tác vụ
+            .box-body
+                // Sử dụng một div chung để bao bọc tất cả các phần tử trên cùng một hàng
+                .filter-and-sort-row
+                    .filter-group
+                        // Nút "Tất cả" - có thể thêm các nút trạng thái khác nếu có
+                        button.btn.btn-status.btn-primary(data-status="", class=(status === '' ? 'btn-active' : '')) Tất cả
+                        // Ví dụ thêm nút trạng thái khác:
+                        // button.btn.btn-status.btn-info(data-status="active", class=(status === 'active' ? 'btn-active' : '')) Hoạt động
+                        // button.btn.btn-status.btn-danger(data-status="inactive", class=(status === 'inactive' ? 'btn-active' : '')) Ngừng hoạt động
+                    .search-group
+                        input.form-input(type="text", placeholder="Nhập từ khóa", name="keyword", value=(keyword || ''))
+                        button#btnSearch.btn.btn-search.btn-success(type="button") Tìm
+                    .sort-group
+                        select#sortSelect.form-select(name="sort")
+                            option(value="") Sắp xếp
+                            option(value="title-asc", selected=(sort === "title-asc")) Tiêu đề A-Z
+                            option(value="title-desc", selected=(sort === "title-desc")) Tiêu đề Z-A
+                            option(value="price-asc", selected=(sort === "price-asc")) Giá tăng dần
+                            option(value="price-desc", selected=(sort === "price-desc")) Giá giảm dần
+                    button#btnClearSort.btn.btn-clear.btn-danger(type="button") Clear
+                    // Thêm nút "Thêm sản phẩm" trực tiếp vào .filter-and-sort-row
+                    a.btn.btn-success.ml-auto(href="/admin/products/create") Thêm sản phẩm
+
+
+        .box-list
+            .box-header Danh sách
+            .box-body
+                .table-responsive
+                    table#foodTable.custom-table
+                        thead
+                            tr
+                                th
+                                    input(type="checkbox", id="checkAll")
+                                th STT
+                                th Hình ảnh
+                                th Tiêu đề
+                                th Giá
+                                th Hành động
+                        tbody
+                            if foods.length > 0
+                                each food, index in foods
+                                    tr
+                                        td
+                                            input(type="checkbox", name="id", value=food.id)
+                                        td #{index + 1 + (pagination.currentPage - 1) * pagination.productsPerPage}
+                                        td
+                                            if food.ImagePath
+                                                img(src=food.ImagePath, alt=food.Title, width="50", height="50", style="object-fit: cover; border-radius: 4px;")
+                                            else
+                                                span Không có hình ảnh
+                                        td #{food.Title || 'Không có tên'}
+                                        // Sử dụng toLocaleString để định dạng giá thành chuỗi có dấu phân cách nghìn và thêm đơn vị
+                                        // Giá trị food.Price phải là một SỐ (number) để toLocaleString hoạt động đúng
+                                        td #{typeof food.Price === 'number' ? food.Price.toLocaleString('vi-VN') : (food.Price || '0')} đ
+                                        td
+                                            // Cập nhật các đường dẫn Chi tiết và Sửa
+                                            a.btn.btn-sm.btn-secondary(href=`${prefixAdmin}/products/detail/${food.id}`) Chi tiết
+                                            a.btn.btn-sm.btn-warning(href=`${prefixAdmin}/products/edit/${food.id}`) Sửa
+                                            // Thay thế form POST bằng button và xử lý DELETE bằng JS
+                                            button.btn.btn-sm.btn-danger(data-id=food.id) Xóa
+                            else
+                                tr
+                                    td(colspan="6") Không tìm thấy sản phẩm nào.
+
+                // === PHẦN PHÂN TRANG (PAGINATION) ===
+                .pagination-wrapper
+                    .pagination-info
+                        span Hiển thị #{(pagination.currentPage - 1) * pagination.productsPerPage + 1} - #{Math.min(pagination.currentPage * pagination.productsPerPage, pagination.totalProducts)} trên #{pagination.totalProducts} kết quả
+
+                    nav(aria-label="Page navigation example")
+                        ul.pagination-list
+                            // Nút "Trước"
+                            li.page-item(class=(pagination.currentPage === 1 ? 'disabled' : ''))
+                                a.page-link(href="#" data-page=(pagination.currentPage - 1)) Trước
+
+                            // Các số trang
+                            - for (let i = 1; i <= pagination.totalPages; i++)
+                                li.page-item(class=(pagination.currentPage === i ? 'active' : ''))
+                                    a.page-link(href="#" data-page=i) #{i}
+
+                            // Nút "Kế tiếp"
+                            li.page-item(class=(pagination.currentPage === pagination.totalPages || pagination.totalPages === 0 ? 'disabled' : ''))
+                                a.page-link(href="#" data-page=(pagination.currentPage + 1)) Kế tiếp
+                // === KẾT THÚC PHẦN PHÂN TRANG ===
+
+block scripts
+    script.
+        const PATCH_ADMIN = "#{prefixAdmin}"; // Lấy prefixAdmin từ controller
+        // Đảm bảo URL API này đúng với routes của bạn, bao gồm prefixAdmin
+        // Ví dụ: '/admin/products/delete' nếu PATCH_ADMIN là '/admin'
+        const API_DELETE_URL_BASE = `${PATCH_ADMIN}/products/delete`;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lấy các tham số hiện tại từ URL
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Logic cho các nút delete
+            // Chọn tất cả các nút có class .btn-danger và thuộc tính data-id
+            const deleteButtons = document.querySelectorAll('.btn-danger[data-id]');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const foodId = e.target.dataset.id;
+                    if (confirm('Bạn có chắc chắn muốn xóa món ăn này không?')) {
+                        try {
+                            const res = await fetch(`${API_DELETE_URL_BASE}/${foodId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            const data = await res.json(); // Đọc phản hồi JSON
+
+                            if (res.ok) {
+                                alert(data.message || 'Xóa món ăn thành công!');
+                                window.location.reload(); // Tải lại trang sau khi xóa thành công
+                            } else {
+                                alert(data.error || 'Lỗi khi xóa món ăn.');
+                            }
+                        } catch (error) {
+                            console.error('Error deleting food:', error);
+                            alert('Đã xảy ra lỗi hệ thống khi xóa món ăn.');
+                        }
+                    }
+                });
+            });
+
+            // Logic cho checkbox "Chọn tất cả" (giữ nguyên)
+            const checkAll = document.getElementById('checkAll');
+            const itemCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+
+            if (checkAll) {
+                checkAll.addEventListener('change', () => {
+                    itemCheckboxes.forEach(checkbox => {
+                        checkbox.checked = checkAll.checked;
+                    });
+                });
+            }
+
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (!checkbox.checked) {
+                        checkAll.checked = false;
+                    } else {
+                        const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                        checkAll.checked = allChecked;
+                    }
+                });
+            });
+
+            // Logic cho nút tìm kiếm và input (giữ nguyên)
+            const btnSearch = document.getElementById('btnSearch');
+            const keywordInput = document.querySelector('input[name="keyword"]');
+
+            if (btnSearch && keywordInput) {
+                btnSearch.addEventListener('click', () => {
+                    const keyword = keywordInput.value.trim();
+                    let currentUrl = new URL(window.location.href);
+
+                    if (keyword) {
+                        currentUrl.searchParams.set('keyword', keyword);
+                    } else {
+                        currentUrl.searchParams.delete('keyword');
+                    }
+                    currentUrl.searchParams.delete('page'); // Reset về trang 1 khi tìm kiếm mới
+                    window.location.href = currentUrl.toString();
+                });
+            }
+
+            if (keywordInput) {
+                keywordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        btnSearch.click();
+                    }
+                });
+            }
+
+            // Logic cho các nút lọc trạng thái (giữ nguyên)
+            const statusButtons = document.querySelectorAll('.btn-status');
+            statusButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const status = button.dataset.status;
+                    let currentUrl = new URL(window.location.href);
+
+                    if (status) {
+                        currentUrl.searchParams.set('status', status);
+                    } else {
+                        currentUrl.searchParams.delete('status');
+                    }
+                    currentUrl.searchParams.delete('page'); // Reset về trang 1 khi thay đổi trạng thái
+                    window.location.href = currentUrl.toString();
+                });
+            });
+
+            // Logic cho select sắp xếp (giữ nguyên)
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', () => {
+                    const sortValue = sortSelect.value;
+                    let currentUrl = new URL(window.location.href);
+                    if (sortValue) {
+                        currentUrl.searchParams.set('sort', sortValue);
+                    } else {
+                        currentUrl.searchParams.delete('sort');
+                    }
+                    currentUrl.searchParams.delete('page'); // Reset về trang 1 khi thay đổi sắp xếp
+                    window.location.href = currentUrl.toString();
+                });
+            }
+
+            // Logic cho nút "Clear" sắp xếp và lọc
+            const btnClearSort = document.getElementById('btnClearSort');
+            if (btnClearSort) {
+                btnClearSort.addEventListener('click', () => {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete('sort'); // Xóa tham số sort
+                    currentUrl.searchParams.delete('keyword'); // Xóa tham số keyword
+                    currentUrl.searchParams.delete('status'); // Xóa tham số status
+                    currentUrl.searchParams.delete('page'); // Reset về trang 1
+                    window.location.href = currentUrl.toString();
+                });
+            }
+
+            // === PHẦN PHÂN TRANG JAVASCRIPT ===
+            const paginationLinks = document.querySelectorAll('.pagination-list .page-link');
+            paginationLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault(); // Ngăn chặn hành vi mặc định của thẻ <a>
+                    const page = parseInt(e.target.dataset.page);
+                    if (isNaN(page)) return; // Thoát nếu page không phải số
+
+                    const parentLi = e.target.closest('li.page-item');
+                    if (parentLi.classList.contains('disabled')) {
+                        return; // Không làm gì nếu nút bị disabled
+                    }
+
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('page', page);
+                    window.location.href = currentUrl.toString();
+                });
+            });
+            // === KẾT THÚC PHẦN PHÂN TRANG ===
+        });

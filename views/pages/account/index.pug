@@ -1,0 +1,201 @@
+extends ../../layouts/default.pug
+
+block main
+  .container-custom
+    h1.page-title Danh sách tài khoản
+
+    if messages.success && messages.success.length > 0
+      .alert.alert-success
+        ul
+          each msg in messages.success
+            li= msg
+    if messages.error && messages.error.length > 0
+      .alert.alert-danger
+        ul
+          each msg in messages.error
+            li= msg
+
+    .box-filter
+      .box-header Tác vụ
+      .box-body
+        .filter-and-sort-row
+          .filter-group
+            button.btn.btn-status.btn-primary(data-role="", class=(role === '' ? 'btn-active' : '')) Tất cả
+            button.btn.btn-status.btn-info(data-role="admin", class=(role === 'admin' ? 'btn-active' : '')) Admin
+            button.btn.btn-status.btn-warning(data-role="user", class=(role === 'user' ? 'btn-active' : '')) User
+          .search-group
+            input.form-input(type="text", placeholder="Nhập từ khóa (email)", name="keyword", value=(keyword || ''))
+            button#btnSearch.btn.btn-search.btn-success(type="button") Tìm
+          .sort-group
+            select#sortSelect.form-select(name="sort")
+              option(value="") Sắp xếp
+              option(value="email-asc", selected=(sort === "email-asc")) Email A-Z
+              option(value="email-desc", selected=(sort === "email-desc")) Email Z-A
+              option(value="createdAt-asc", selected=(sort === "createdAt-asc")) Ngày tạo cũ nhất
+              option(value="createdAt-desc", selected=(sort === "createdAt-desc")) Ngày tạo mới nhất
+            button#btnClearSort.btn.btn-clear.btn-danger(type="button") Clear
+            a.btn.btn-success.ml-auto(href=`${prefixAdmin}/accounts/create`) Thêm tài khoản
+
+    .box-list
+      .box-header Danh sách
+      .box-body
+        .table-responsive
+          table#accountTable.custom-table
+            thead
+              tr
+                th
+                  input(type="checkbox", id="checkAll")
+                th STT
+                th Email
+                th Vai trò
+                th Trạng thái
+                th Ngày tạo
+                th Hành động
+            tbody
+              if accounts && accounts.length > 0
+                each account, index in accounts
+                  tr
+                    td
+                      input(type="checkbox", name="id", value=account.id)
+                    td #{index + 1 + (pagination.currentPage - 1) * pagination.accountsPerPage}
+                    td #{account.email || 'Không có email'}
+                    td
+                      span.badge(class=(account.role === 'admin' ? 'badge-primary' : 'badge-secondary')) #{account.role ? account.role.toUpperCase() : ''}
+                    td
+                      a(href=`${prefixAdmin}/accounts/change-status/${account.id}/${account.status || 'active'}` class=`badge ${account.status === 'active' ? 'badge-success' : 'badge-danger'}`)
+                        | #{account.status === 'active' ? 'Hoạt động' : 'Ngừng hoạt động'}
+                    td #{new Date(account.createdAt).toLocaleString('vi-VN')}
+                    td
+                      a.btn.btn-sm.btn-info(href=`${prefixAdmin}/accounts/detail/${account.id}`) Chi tiết
+                      a.btn.btn-sm.btn-warning(href=`${prefixAdmin}/accounts/edit/${account.id}`) Sửa
+                      button.btn.btn-sm.btn-danger(data-id=account.id) Xóa
+              else
+                tr
+                  td(colspan="7") Không tìm thấy tài khoản nào.
+
+        if pagination && pagination.totalPages > 1
+          .pagination-wrapper
+            .pagination-info
+              span Hiển thị #{(pagination.currentPage - 1) * pagination.accountsPerPage + 1} - #{Math.min(pagination.currentPage * pagination.accountsPerPage, pagination.totalAccounts)} trên #{pagination.totalAccounts} kết quả
+
+            nav(aria-label="Page navigation example")
+              ul.pagination-list
+                li.page-item(class=(pagination.currentPage === 1 ? 'disabled' : ''))
+                  a.page-link(href="#" data-page=(pagination.currentPage - 1)) Trước
+
+                - for (let i = 1; i <= pagination.totalPages; i++)
+                  li.page-item(class=(pagination.currentPage === i ? 'active' : ''))
+                    a.page-link(href="#" data-page=i) #{i}
+
+                li.page-item(class=(pagination.currentPage === pagination.totalPages ? 'disabled' : ''))
+                  a.page-link(href="#" data-page=(pagination.currentPage + 1)) Kế tiếp
+
+block scripts
+  script.
+    const prefixAdmin = "#{prefixAdmin}";
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const deleteButtons = document.querySelectorAll('.btn-danger[data-id]');
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const accountId = e.target.dataset.id;
+          if (confirm('Bạn có chắc chắn muốn xóa tài khoản này không?')) {
+            const response = await fetch(`${prefixAdmin}/accounts/delete/${accountId}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+              alert(data.message || 'Xóa tài khoản thành công!');
+              window.location.reload();
+            } else {
+              alert(data.error || 'Lỗi khi xóa tài khoản.');
+            }
+          }
+        });
+      });
+
+      const checkAll = document.getElementById('checkAll');
+      const itemCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+
+      if (checkAll) {
+        checkAll.addEventListener('change', () => {
+          itemCheckboxes.forEach(cb => cb.checked = checkAll.checked);
+        });
+      }
+
+      itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (!cb.checked) {
+            checkAll.checked = false;
+          } else {
+            const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+            checkAll.checked = allChecked;
+          }
+        });
+      });
+
+      const btnSearch = document.getElementById('btnSearch');
+      const keywordInput = document.querySelector('input[name="keyword"]');
+
+      if (btnSearch && keywordInput) {
+        btnSearch.addEventListener('click', () => {
+          const keyword = keywordInput.value.trim();
+          const currentUrl = new URL(window.location.href);
+          keyword ? currentUrl.searchParams.set('keyword', keyword) : currentUrl.searchParams.delete('keyword');
+          currentUrl.searchParams.delete('page');
+          window.location.href = currentUrl.toString();
+        });
+
+        keywordInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') btnSearch.click();
+        });
+      }
+
+      const roleButtons = document.querySelectorAll('.btn-status[data-role]');
+      roleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const role = button.dataset.role;
+          const currentUrl = new URL(window.location.href);
+          role ? currentUrl.searchParams.set('role', role) : currentUrl.searchParams.delete('role');
+          currentUrl.searchParams.delete('page');
+          window.location.href = currentUrl.toString();
+        });
+      });
+
+      const sortSelect = document.getElementById('sortSelect');
+      if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+          const currentUrl = new URL(window.location.href);
+          sortSelect.value ? currentUrl.searchParams.set('sort', sortSelect.value) : currentUrl.searchParams.delete('sort');
+          currentUrl.searchParams.delete('page');
+          window.location.href = currentUrl.toString();
+        });
+      }
+
+      const btnClearSort = document.getElementById('btnClearSort');
+      if (btnClearSort) {
+        btnClearSort.addEventListener('click', () => {
+          const currentUrl = new URL(window.location.href);
+          ['sort', 'keyword', 'role', 'page'].forEach(p => currentUrl.searchParams.delete(p));
+          window.location.href = currentUrl.toString();
+        });
+      }
+
+      const paginationLinks = document.querySelectorAll('.pagination-list .page-link');
+      paginationLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const page = parseInt(e.target.dataset.page);
+          if (isNaN(page)) return;
+          const parentLi = e.target.closest('li.page-item');
+          if (parentLi && parentLi.classList.contains('disabled')) return;
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('page', page);
+          window.location.href = currentUrl.toString();
+        });
+      });
+    });

@@ -1,0 +1,149 @@
+extends ../../layouts/default.pug
+
+block main
+  h1.mb-4 Danh sách đơn hàng
+
+  .card.mb-3 
+    .card-header Bộ lọc và tìm kiếm
+    .card-body
+      .row.align-items-center 
+        .col-6 
+          .input-group
+            input(
+              type="text"
+              class="form-control"
+              placeholder="Tìm kiếm theo mã đơn hàng hoặc tên khách hàng..."
+              name="keyword"
+              value=keyword
+              id="keywordInput"
+            )
+            .input-group-append
+              button.btn.btn-outline-secondary(type="button" id="searchButton") Tìm kiếm
+        .col-6.d-flex.justify-content-end 
+          .btn-group.btn-group-sm 
+            a(href=`${prefixAdmin}/orders`).btn.btn-outline-secondary.status-filter(class=status==="" ? "active" : "") Tất cả
+            a(href=`${prefixAdmin}/orders?status=Chờ xác nhận`).btn.btn-outline-secondary.status-filter(class=status==="Chờ xác nhận" ? "active" : "") Chờ xác nhận
+            a(href=`${prefixAdmin}/orders?status=Xác nhận`).btn.btn-outline-secondary.status-filter(class=status==="Xác nhận" ? "active" : "") Xác nhận
+            a(href=`${prefixAdmin}/orders?status=Đang giao hàng`).btn.btn-outline-secondary.status-filter(class=status==="Đang giao hàng" ? "active" : "") Đang giao hàng
+            a(href=`${prefixAdmin}/orders?status=Giao hàng thành công`).btn.btn-outline-secondary.status-filter(class=status==="Giao hàng thành công" ? "active" : "") Giao hàng thành công
+
+  if orders.length > 0
+    table.table.table-hover.table-sm
+      thead
+        tr
+          th STT
+          th Mã đơn hàng
+          th Khách hàng
+          th Tổng tiền
+          th Trạng thái
+          th Ngày tạo
+          th Thao tác
+      tbody
+        each order, index in orders
+          tr
+            td #{pagination.itemsPerPage * (pagination.currentPage - 1) + (index + 1)}
+            td #{order.orderCode}
+            td #{order.fullName}
+            td
+              if order.total
+                span #{parseFloat(order.total.replace(/\./g, '')).toLocaleString('vi-VN')} VNĐ
+              else
+                span (Chưa có)
+            td
+              select.form-control.form-control-sm.change-status-select(data-id=order.id)
+                option(value="Chờ xác nhận" selected=(order.status === "Chờ xác nhận")) Chờ xác nhận
+                option(value="Xác nhận" selected=(order.status === "Xác nhận")) Xác nhận
+                option(value="Đang giao hàng" selected=(order.status === "Đang giao hàng")) Đang giao hàng
+                option(value="Giao hàng thành công" selected=(order.status === "Giao hàng thành công")) Giao hàng thành công
+            td #{order.orderDate}
+            td
+              a(href=`${prefixAdmin}/orders/detail/${order.id}`).btn.btn-info.btn-sm Chi tiết
+
+    //- PHÂN TRANG
+    if pagination.totalPages > 1
+      nav(aria-label='Page navigation')
+        ul.pagination.justify-content-center
+          li.page-item(class={ 'disabled': pagination.currentPage === 1 })
+            a.page-link(href=`${prefixAdmin}/orders?page=${pagination.currentPage - 1}${keyword ? '&keyword=' + keyword : ''}${status ? '&status=' + status : ''}`) Trước
+          - for (let i = 1; i <= pagination.totalPages; i++)
+            li.page-item(class={ 'active': i === pagination.currentPage })
+              a.page-link(href=`${prefixAdmin}/orders?page=${i}${keyword ? '&keyword=' + keyword : ''}${status ? '&status=' + status : ''}`) #{i}
+          li.page-item(class={ 'disabled': pagination.currentPage === pagination.totalPages })
+            a.page-link(href=`${prefixAdmin}/orders?page=${pagination.currentPage + 1}${keyword ? '&keyword=' + keyword : ''}${status ? '&status=' + status : ''}`) Sau
+
+  else
+    .alert.alert-warning Không tìm thấy đơn hàng nào.
+
+  script.
+    document.addEventListener('DOMContentLoaded', function() {
+      const prefixAdmin = "!{prefixAdmin}";
+
+      const searchButton = document.getElementById('searchButton');
+      const keywordInput = document.getElementById('keywordInput');
+      if (searchButton && keywordInput) {
+        searchButton.addEventListener('click', function() {
+          const keyword = keywordInput.value;
+          let currentUrl = new URL(window.location.href);
+          if (keyword) {
+            currentUrl.searchParams.set('keyword', keyword);
+          } else {
+            currentUrl.searchParams.delete('keyword');
+          }
+          currentUrl.searchParams.delete('page');
+          window.location.href = currentUrl.toString();
+        });
+
+        keywordInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            searchButton.click();
+          }
+        });
+      }
+
+      const changeStatusSelects = document.querySelectorAll('.change-status-select');
+      changeStatusSelects.forEach(select => {
+        select.addEventListener('change', async function() {
+          const orderId = this.dataset.id;
+          const newStatus = this.value;
+
+          try {
+            const response = await fetch(`${prefixAdmin}/orders/change-status/${orderId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ status: newStatus })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+              alert(data.message);
+            } else {
+              alert(`Lỗi: ${data.error || data.message || 'Có lỗi xảy ra!'}`);
+            }
+          } catch (error) {
+            console.error('Lỗi khi gửi request:', error);
+            alert('Đã xảy ra lỗi khi cập nhật trạng thái.');
+          }
+        });
+      });
+
+      const statusFilters = document.querySelectorAll('.status-filter');
+      statusFilters.forEach(filterLink => {
+        filterLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          const targetHref = this.getAttribute('href');
+          let currentUrl = new URL(window.location.href);
+          let newUrl = new URL(targetHref, window.location.origin);
+
+          if (currentUrl.searchParams.has('keyword')) {
+            newUrl.searchParams.set('keyword', currentUrl.searchParams.get('keyword'));
+          }
+          if (currentUrl.searchParams.has('page')) {
+            newUrl.searchParams.set('page', currentUrl.searchParams.get('page'));
+          }
+
+          window.location.href = newUrl.toString();
+        });
+      });
+    });

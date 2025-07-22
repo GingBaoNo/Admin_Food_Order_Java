@@ -1,0 +1,76 @@
+extends ../../layouts/default.pug
+
+block main
+  .container-custom
+    h1.page-title Quản lý Danh mục
+
+    if messages.success && messages.success.length > 0
+      .alert.alert-success
+        ul
+          each msg in messages.success
+            li= msg
+
+    if messages.error && messages.error.length > 0
+      .alert.alert-danger
+        ul
+          each msg in messages.error
+            li= msg
+
+    .box-head
+      .box-left
+        h2 Danh sách Danh mục
+      .box-right
+        a.btn.btn-primary(href=`${prefixAdmin}/categories/create`) Thêm mới
+
+    .box-body
+      if categories.length > 0
+        table.table.table-hover.table-sm
+          thead
+            tr
+              th ID
+              th Tên danh mục
+              th Hình ảnh
+              th Thao tác
+          tbody
+            each category in categories
+              tr
+                td= category.Id
+                td= category.Name
+                td
+                  if category.ImagePath
+                    img(src=category.ImagePath, alt=category.Name, style="width: 50px; height: 50px; object-fit: cover;")
+                  else
+                    span (Chưa có ảnh)
+                td
+                  a.btn.btn-secondary.btn-sm(href=`${prefixAdmin}/categories/edit/${category.key}`) Sửa
+                  button.btn.btn-danger.btn-sm.ml-1(
+                    data-id=category.key,
+                    button-delete
+                  ) Xóa
+      else
+        p Không có danh mục nào.
+
+  script.
+    document.querySelectorAll('[button-delete]').forEach(button => {
+      button.addEventListener('click', async function () {
+        const key = this.getAttribute('data-id');
+        if (!confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
+
+        try {
+          const res = await fetch(`/admin/categories/delete/${key}`, {
+            method: 'DELETE'
+          });
+
+          const result = await res.json();
+          if (res.ok) {
+            alert(result.message);
+            this.closest('tr').remove();
+          } else {
+            alert(result.error || 'Có lỗi xảy ra');
+          }
+        } catch (err) {
+          alert('Lỗi kết nối máy chủ');
+          console.error(err);
+        }
+      });
+    });

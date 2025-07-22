@@ -1,0 +1,50 @@
+extends ../../layouts/default.pug
+
+block main
+    .container-custom
+        h1.page-title Chỉnh sửa sản phẩm
+
+        // Hiển thị thông báo flash message (nếu có)
+        if messages.success && messages.success.length > 0
+            .alert.alert-success
+                ul
+                    each msg in messages.success
+                        li= msg
+        if messages.error && messages.error.length > 0
+            .alert.alert-danger
+                ul
+                    each msg in messages.error
+                        li= msg
+
+        .box-edit
+            .box-header Chỉnh sửa thông tin
+            .box-body
+                form#editFoodForm(method="POST" action=`/admin/products/edit/${food.id}` enctype="multipart/form-data")
+                    .form-group
+                        label(for="title") Tiêu đề:
+                        input#title.form-control(type="text", name="Title", value=food.Title, required)
+                    .form-group
+                        label(for="description") Mô tả:
+                        textarea#description.form-control(name="Description", rows="5")= food.Description
+                    .form-group
+                        label(for="price") Giá:
+                        input#price.form-control(type="number", name="Price", value=food.Price, min="0", step="any", required)
+                    .form-group
+                        label(for="position") Vị trí:
+                        input#position.form-control(type="number", name="Position", value=food.Position || 0, min="0")
+                    .form-group
+                        label(for="status") Trạng thái:
+                        select#status.form-control(name="Status")
+                            option(value="active", selected=(food.Status === 'active')) Hoạt động
+                            option(value="inactive", selected=(food.Status === 'inactive')) Ngừng hoạt động
+                    .form-group
+                        label(for="image") Hình ảnh:
+                        if food.ImagePath
+                            .current-image-preview.mb-2
+                                img(src=food.ImagePath, alt="Current Image", style="max-width: 150px; border-radius: 4px;")
+                                p.text-muted Ảnh hiện tại
+                        input#image.form-control-file(type="file", name="image", accept="image/*")
+
+                    .form-group.text-right
+                        button.btn.btn-success(type="submit") Cập nhật
+                        a.btn.btn-secondary.ml-2(href="/admin/foods") Hủy

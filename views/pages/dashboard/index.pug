@@ -1,0 +1,105 @@
+extends ../../layouts/default.pug
+
+block main
+  h1.mb-4 Trang Tổng quan
+
+  .row.mb-4
+    .col-md-3.mb-3
+      .card.text-white.bg-primary.o-hidden.h-100
+        .card-body
+          .card-body-icon
+            i.fas.fa-fw.fa-shopping-cart
+          .text-uppercase.font-weight-bold Tổng đơn hàng
+          .h5 #{totalOrders}
+        a.card-footer.text-white.clearfix.small.z-1(href=`${prefixAdmin}/orders`)
+          span.float-left Xem chi tiết
+          span.float-right
+            i.fas.fa-angle-right
+
+    .col-md-3.mb-3
+      .card.text-white.bg-success.o-hidden.h-100
+        .card-body
+          .card-body-icon
+            i.fas.fa-fw.fa-dollar-sign
+          .text-uppercase.font-weight-bold Tổng doanh thu
+          .h5 #{totalRevenue} VNĐ
+        a.card-footer.text-white.clearfix.small.z-1(href=`${prefixAdmin}/orders?status=Giao hàng thành công`)
+          span.float-left Xem đơn đã giao
+          span.float-right
+            i.fas.fa-angle-right
+
+    .col-md-3.mb-3
+      .card.text-white.bg-warning.o-hidden.h-100
+        .card-body
+          .card-body-icon
+            i.fas.fa-fw.fa-hourglass-half
+          .text-uppercase.font-weight-bold Đơn hàng chờ xác nhận
+          .h5 #{pendingOrdersCount}
+        a.card-footer.text-white.clearfix.small.z-1(href=`${prefixAdmin}/orders?status=Chờ xác nhận`)
+          span.float-left Xem đơn hàng chờ
+          span.float-right
+            i.fas.fa-angle-right
+
+    .col-md-3.mb-3
+      .card.text-white.bg-info.o-hidden.h-100
+        .card-body
+          .card-body-icon
+            i.fas.fa-fw.fa-utensils
+          .text-uppercase.font-weight-bold Tổng món ăn
+          .h5 #{totalFoods}
+        a.card-footer.text-white.clearfix.small.z-1(href=`${prefixAdmin}/products`)
+          span.float-left Xem kho món ăn
+          span.float-right
+            i.fas.fa-angle-right
+
+  .row
+    .col-lg-6.mb-4
+      .card.shadow.mb-4
+        .card-header.py-3
+          h6.m-0.font-weight-bold.text-primary Sản phẩm bán chạy nhất
+        .card-body
+          if topSellingProducts.length > 0
+            ul.list-group
+              each product in topSellingProducts
+                li.list-group-item.d-flex.align-items-center
+                  img(src=product.image, alt=product.name, style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-right: 15px;")
+                  div
+                    h6.mb-0 #{product.name}
+                    small Đã bán: #[strong #{product.quantitySold}]
+          else
+            p Chưa có dữ liệu sản phẩm bán chạy.
+
+    .col-lg-6.mb-4
+      .card.shadow.mb-4
+        .card-header.py-3
+          h6.m-0.font-weight-bold.text-primary Đơn hàng gần đây
+        .card-body
+          if recentOrders.length > 0
+            .table-responsive
+              table.table.table-hover.table-sm
+                thead
+                  tr
+                    th Mã đơn hàng
+                    th Khách hàng
+                    th Tổng tiền
+                    th Trạng thái
+                tbody
+                  each order in recentOrders
+                    tr
+                      td
+                        a(href=`${prefixAdmin}/orders/detail/${order.id}`) #{order.orderCode}
+                      td #{order.fullName}
+                      td #{parseFloat(order.total.toString().replace(/\./g, '')).toLocaleString('vi-VN')} VNĐ
+                      td
+                        span(class=(order.status === "pending" ? "badge badge-warning" : order.status === "confirmed" ? "badge badge-info" : order.status === "shipping" ? "badge badge-primary" : order.status === "delivered" ? "badge badge-success" : order.status === "cancelled" ? "badge badge-danger" : "badge badge-secondary")) #{ORDER_STATUS_MAP[order.status] || order.status}
+          else
+            p Không có đơn hàng gần đây.
+
+  // Có thể thêm biểu đồ tại đây (cần thư viện biểu đồ như Chart.js)
+  // .row
+  //   .col-lg-12
+  //     .card.shadow.mb-4
+  //       .card-header.py-3
+  //         h6.m-0.font-weight-bold.text-primary Biểu đồ doanh thu theo tháng
+  //       .card-body
+  //         canvas#myAreaChart(width="100%" height="30")

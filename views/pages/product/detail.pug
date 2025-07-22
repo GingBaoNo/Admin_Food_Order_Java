@@ -1,0 +1,53 @@
+extends ../../layouts/default.pug
+
+block main
+    .container-custom
+        h1.page-title Chi tiết sản phẩm
+
+        .card.product-detail-card
+            .card-header
+                h2= food.Title || 'Không có tên'
+            .card-body
+                .row
+                    .col-md-4.text-center 
+                        if food.ImagePath
+                            img.img-fluid.rounded(src=food.ImagePath, alt=food.Title, style="max-height: 250px; object-fit: cover;")
+                        else
+                            p Không có hình ảnh
+                    .col-md-8
+                        dl.row.detail-list 
+                            dt.col-sm-3 ID:
+                            dd.col-sm-9= food.id
+                            dt.col-sm-3 Tiêu đề:
+                            dd.col-sm-9= food.Title || 'N/A'
+                            dt.col-sm-3 Mô tả:
+                            dd.col-sm-9
+                                p.description-text= food.Description || 'N/A'
+                            dt.col-sm-3 Giá:
+                            dd.col-sm-9
+                                if typeof food.Price === 'number'
+                                    span #{food.Price.toLocaleString('vi-VN')} đ
+                                else
+                                    span #{food.Price || '0'} đ
+                            dt.col-sm-3 Trạng thái:
+                            dd.col-sm-9
+                                span.badge(class=(food.Status === 'active' || food.Status === null || typeof food.Status === 'undefined' ? 'badge-success' : 'badge-danger'))
+                                    = food.Status === 'active' || food.Status === null || typeof food.Status === 'undefined' ? 'Hoạt động' : 'Ngừng hoạt động'
+                            dt.col-sm-3 Vị trí:
+                            dd.col-sm-9= food.Position || 'N/A'
+                            dt.col-sm-3 Ngày tạo:
+                            dd.col-sm-9
+                                if food.CreatedAt
+                                    span= new Date(food.CreatedAt).toLocaleString('vi-VN')
+                                else
+                                    span N/A
+                            dt.col-sm-3 Ngày cập nhật:
+                            dd.col-sm-9
+                                if food.UpdatedAt
+                                    span= new Date(food.UpdatedAt).toLocaleString('vi-VN')
+                                else
+                                    span N/A
+            .card-footer.text-right
+                // Sử dụng prefixAdmin cho các liên kết
+                a.btn.btn-primary.mr-2(href=`${prefixAdmin}/products/edit/${food.id}`) Sửa sản phẩm
+                a.btn.btn-secondary(href=`${prefixAdmin}/products`) Quay lại danh sách

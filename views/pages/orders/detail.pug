@@ -1,0 +1,52 @@
+extends ../../layouts/default.pug
+
+block main
+  h1.mb-4 Chi tiết đơn hàng: #{order.orderCode}
+
+  .card.mb-4
+    .card-header Thông tin đơn hàng
+    .card-body
+      .row
+        .col-md-6
+          p #[strong Mã đơn hàng:] #{order.orderCode}
+          p #[strong Ngày đặt hàng:] #{order.orderDate}
+          p #[strong Trạng thái:]
+            span(class=(order.status === "pending" ? "badge badge-warning" : order.status === "confirmed" ? "badge badge-info" : order.status === "shipping" ? "badge badge-primary" : order.status === "delivered" ? "badge badge-success" : "badge badge-secondary")) #{order.status === "pending" ? "Chờ xác nhận" : order.status === "confirmed" ? "Xác nhận" : order.status === "shipping" ? "Đang giao hàng" : order.status === "delivered" ? "Giao hàng thành công" : order.status === "cancelled" ? "Đã hủy" : order.status}
+          p #[strong Tổng tiền:]
+            if order.total
+              span #{parseFloat(order.total.replace(/\./g, '')).toLocaleString('vi-VN')} VNĐ
+            else
+              span (Chưa có)
+          p #[strong Phương thức thanh toán:] #{order.paymentMethod}
+        .col-md-6
+          p #[strong Tên khách hàng:] #{order.fullName}
+          p #[strong Số điện thoại:] #{order.phone}
+          p #[strong Địa chỉ giao hàng:] #{order.address}
+          p #[strong ID người dùng:] #{order.userId}
+
+
+  .card.mb-4
+    .card-header Sản phẩm trong đơn hàng
+    .card-body
+      if parsedItems.length > 0
+        table.table.table-hover.table-sm
+          thead
+            tr
+              th STT
+              th Tên sản phẩm
+              th Đơn giá
+              th Số lượng
+              th Thành tiền
+          tbody
+            each item, index in parsedItems
+              tr
+                td #{index + 1}
+                td #{item.name}
+                td #{item.price.toLocaleString('vi-VN')} VNĐ
+                td #{item.quantity}
+                td #{item.subtotal.toLocaleString('vi-VN')} VNĐ
+      else
+        p Không có sản phẩm nào trong đơn hàng này.
+
+  .mt-4
+    a(href=`${prefixAdmin}/orders`).btn.btn-secondary Quay lại danh sách đơn hàng

@@ -1,0 +1,67 @@
+extends ../../layouts/default.pug
+
+block main
+  .container-custom
+    h1.page-title Thêm sản phẩm mới
+
+    if messages.success && messages.success.length > 0
+      .alert.alert-success
+        ul
+          each msg in messages.success
+            li= msg
+
+    if messages.error && messages.error.length > 0
+      .alert.alert-danger
+        ul
+          each msg in messages.error
+            li= msg
+
+    .box-form
+      .box-header Thông tin sản phẩm
+      .box-body
+        form(action=`${prefixAdmin}/products/create`, method="POST", enctype="multipart/form-data")
+          .form-group
+            label(for="title") Tên sản phẩm:
+            input#title.form-input(type="text", name="Title", required, placeholder="Nhập tên sản phẩm")
+          .form-group
+            label(for="price") Giá:
+            input#price.form-input(type="number", name="Price", min="0", required, placeholder="Nhập giá sản phẩm")
+          .form-group
+            label(for="description") Mô tả:
+            textarea#description.form-textarea(name="Description", rows="5", placeholder="Nhập mô tả sản phẩm")
+          .form-group
+            label(for="position") Vị trí (Order):
+            input#position.form-input(type="number", name="Position", min="0", value="1")
+          .form-group
+            label(for="imagePath") Hình ảnh:
+            input#imagePath.form-input(type="file", name="ImagePath", accept="image/*")
+          .form-group
+            label(for="status") Trạng thái:
+            select#status.form-select(name="Status", required)
+              option(value="active", selected) Hoạt động
+              option(value="inactive") Ngừng hoạt động
+          .form-group
+            label(for="categoryId") Danh mục:
+            select#categoryId.form-select(name="CategoryId", required)
+              each category in categories
+                option(value=category.Id)= category.Name
+          // Đã loại bỏ trường Mã địa điểm (LocationId)
+          .form-group
+            label(for="timeId") Thời gian:
+            select#timeId.form-select(name="TimeId", required)
+              each time in times
+                option(value=time.Id)= time.Name
+          .form-group
+            label(for="timeValue") Giá trị thời gian (phút):
+            input#timeValue.form-input(type="number", name="TimeValue", min="0", placeholder="Nhập giá trị thời gian (ví dụ: 45)")
+          .form-group
+            label(for="star") Đánh giá sao:
+            input#star.form-input(type="number", name="Star", step="0.1", min="0", max="5", placeholder="Nhập đánh giá sao (ví dụ: 4.5)")
+          .form-group.checkbox-group
+            input#bestFood.form-checkbox(type="checkbox", name="BestFood", value="true")
+            label(for="bestFood") Món ăn nổi bật
+
+          .form-group.button-group
+            button.btn.btn-primary(type="submit") Thêm mới
+
+            a.btn.btn-secondary(href=`${prefixAdmin}/products`) Hủy

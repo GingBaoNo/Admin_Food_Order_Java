@@ -1,0 +1,25 @@
+doctype html
+html(lang="vi")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Đăng nhập Admin
+    link(rel="stylesheet", href="/admin/css/loginadmin.css")
+  body
+    .register-container
+      .form-column
+        form.registration-form(action="/admin/auth/login" method="POST")
+          h1.form-title Đăng nhập Admin
+          
+          .form-group
+            label.visually-hidden(for="email") Email
+            input#email.input-field(type="email" name="email" placeholder="Email" required)
+          .form-group
+            label.visually-hidden(for="password") Mật khẩu
+            input#password.input-field(type="password" name="password" placeholder="Mật khẩu" required)
+
+          button.submit-button(type="submit") ĐĂNG NHẬP
+          
+          p.switch-form-link
+            | Chưa có tài khoản? 
+            a(href="/admin/register") Đăng ký ngay

@@ -1,0 +1,18 @@
+doctype html
+html(lang="vi")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title= pageTitle || 'Page Not Found'
+    style.
+      body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f8d7da; color: #721c24; margin: 0; flex-direction: column; }
+      .container { background-color: #fdd; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; border: 1px solid #f5c6cb; }
+      h1 { font-size: 4em; margin-bottom: 10px; color: #dc3545; }
+      p { font-size: 1.2em; margin-bottom: 20px; }
+      a { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; transition: background-color 0.3s ease; }
+      a:hover { background-color: #0056b3; }
+  body
+    .container
+      h1 404
+      p Oops! Trang bạn tìm kiếm không tồn tại.
+      a(href="/admin/login") Quay lại trang đăng nhập

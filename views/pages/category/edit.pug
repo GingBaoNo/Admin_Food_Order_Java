@@ -1,0 +1,37 @@
+extends ../../layouts/default.pug
+
+block main
+  .container-custom
+    h1.page-title Chỉnh sửa danh mục: #{category.Name}
+
+    if messages.success && messages.success.length > 0
+      .alert.alert-success
+        ul
+          each msg in messages.success
+            li= msg
+
+    if messages.error && messages.error.length > 0
+      .alert.alert-danger
+        ul
+          each msg in messages.error
+            li= msg
+
+    .box-form
+      .box-header Thông tin danh mục
+      .box-body
+        form(action=`${prefixAdmin}/categories/edit/${category.key}?_method=PATCH`, method="POST", enctype="multipart/form-data")
+          .form-group
+            label(for="name") Tên danh mục:
+            input#name.form-input(type="text", name="Name", required, value=category.Name)
+          .form-group
+            label(for="imagePath") Hình ảnh hiện tại:
+            if category.ImagePath
+              img(src=category.ImagePath, alt=category.Name, style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;")
+            else
+              p (Chưa có ảnh)
+            input#imagePath.form-input(type="file", name="ImagePath", accept="image/*")
+            small.form-text.text-muted Để thay đổi ảnh, chọn một tệp mới. Để giữ ảnh cũ, không chọn gì.
+
+          .form-group.button-group
+            button.btn.btn-primary(type="submit") Cập nhật
+            a.btn.btn-secondary(href=`${prefixAdmin}/categories`) Hủy

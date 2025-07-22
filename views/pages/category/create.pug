@@ -1,0 +1,32 @@
+extends ../../layouts/default.pug
+
+block main
+  .container-custom
+    h1.page-title Thêm danh mục mới
+
+    if messages.success && messages.success.length > 0
+      .alert.alert-success
+        ul
+          each msg in messages.success
+            li= msg
+
+    if messages.error && messages.error.length > 0
+      .alert.alert-danger
+        ul
+          each msg in messages.error
+            li= msg
+
+    .box-form
+      .box-header Thông tin danh mục
+      .box-body
+        form(action=`${prefixAdmin}/categories/create`, method="POST", enctype="multipart/form-data")
+          .form-group
+            label(for="name") Tên danh mục:
+            input#name.form-input(type="text", name="Name", required, placeholder="Nhập tên danh mục")
+          .form-group
+            label(for="imagePath") Hình ảnh:
+            input#imagePath.form-input(type="file", name="ImagePath", accept="image/*")
+
+          .form-group.button-group
+            button.btn.btn-primary(type="submit") Thêm mới
+            a.btn.btn-secondary(href=`${prefixAdmin}/categories`) Hủy
