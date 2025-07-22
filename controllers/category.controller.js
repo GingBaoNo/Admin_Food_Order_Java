@@ -3,20 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const admin = require('../config/firebase');
 const bucket = admin.storage().bucket();
-const PATCH_ADMIN = "/admin"; // Đảm bảo đúng với prefix admin của bạn
+const PATCH_ADMIN = "/admin";
 
 module.exports = {
     prefixAdmin: PATCH_ADMIN,
 
-    // [GET] /admin/categories
     index: async (req, res) => {
         try {
             const snapshot = await admin.database().ref('Category').once('value');
             let data = snapshot.val();
-            // Chuyển đổi object thành mảng, thêm key của Firebase là 'key' để dễ truy cập
+
             let categories = data ? Object.entries(data).map(([key, category]) => ({ key, ...category })) : [];
 
-            // Sắp xếp theo Id (nếu có) hoặc theo thứ tự mặc định
             categories.sort((a, b) => (a.Id || 0) - (b.Id || 0));
 
             res.render('pages/category/index', {
@@ -30,14 +28,13 @@ module.exports = {
         }
     },
 
-    // [GET] /admin/categories/create
     createView: (req, res) => {
         res.render('pages/category/create', {
             pageTitle: "Thêm Danh mục mới"
         });
     },
 
-    // [POST] /admin/categories/create
+
     createCategory: async (req, res) => {
         try {
             const newCategoryData = { ...req.body };
@@ -51,34 +48,31 @@ module.exports = {
                 fs.writeFileSync(tempFilePath, req.file.buffer);
 
                 await bucket.upload(tempFilePath, {
-                    destination: `category_images/${filename}`, // Thư mục riêng cho ảnh danh mục
+                    destination: `category_images/${filename}`, 
                     public: true,
                     metadata: { contentType: req.file.mimetype }
                 });
 
                 newCategoryData.ImagePath = `https://storage.googleapis.com/${bucket.name}/category_images/${filename}`;
-                fs.unlinkSync(tempFilePath); // Xóa file tạm
+                fs.unlinkSync(tempFilePath); 
             } else {
-                newCategoryData.ImagePath = ""; // Hoặc đường dẫn ảnh mặc định
+                newCategoryData.ImagePath = ""; 
             }
 
-            // Lấy ID tiếp theo (tự động tăng)
+
             const snapshot = await admin.database().ref('Category').once('value');
             const categoriesData = snapshot.val();
             let nextId = 0;
             if (categoriesData) {
-                // Lấy tất cả các Id hiện có và tìm max để xác định nextId
                 const existingIds = Object.values(categoriesData).map(cat => cat.Id || 0);
                 nextId = Math.max(...existingIds) + 1;
             }
-            newCategoryData.Id = nextId; // Gán Id tự động tăng
+            newCategoryData.Id = nextId; 
 
             newCategoryData.CreatedAt = admin.database.ServerValue.TIMESTAMP;
             newCategoryData.UpdatedAt = admin.database.ServerValue.TIMESTAMP;
 
-            // Firebase Realtime Database sẽ tự động tạo một key ngẫu nhiên khi dùng .push()
-            // Hoặc bạn có thể tự định nghĩa key nếu muốn Id giống với key (nhưng dễ xung đột)
-            // Tốt nhất nên dùng .push() và lưu Id bên trong object
+
             const newCategoryRef = admin.database().ref('Category').push();
             await newCategoryRef.set(newCategoryData);
 
@@ -94,14 +88,14 @@ module.exports = {
     // [GET] /admin/categories/edit/:key
     editView: async (req, res) => {
         try {
-            const { key } = req.params; // Lấy key của Firebase
+            const { key } = req.params; 
             const snapshot = await admin.database().ref(`Category/${key}`).once('value');
             const category = snapshot.val();
             if (!category) {
                 req.flash("error", "Không tìm thấy danh mục để chỉnh sửa!");
                 return res.redirect(`${PATCH_ADMIN}/categories`);
             }
-            category.key = key; // Gán key vào object để dễ sử dụng trong pug
+            category.key = key; 
 
             res.render('pages/category/edit', {
                 pageTitle: `Chỉnh sửa danh mục: ${category.Name || 'N/A'}`,
@@ -114,13 +108,13 @@ module.exports = {
         }
     },
 
-    // [PATCH] /admin/categories/edit/:key
+
     editPatch: async (req, res) => {
         try {
             const { key } = req.params;
             const updates = { ...req.body };
 
-            // Xử lý ảnh mới nếu có upload
+
             if (req.file) {
                 const filename = `${Date.now()}-${req.file.originalname}`;
                 const tempDir = path.join(__dirname, '../temp');
@@ -151,8 +145,6 @@ module.exports = {
                     }
                 }
             }
-            // Nếu không có file mới được upload, ImagePath sẽ giữ nguyên (hoặc không được gửi lên nếu không thay đổi)
-            // Nếu muốn cho phép xóa ảnh bằng cách gửi trống, bạn cần thêm logic kiểm tra ở đây.
 
             updates.UpdatedAt = admin.database.ServerValue.TIMESTAMP;
 

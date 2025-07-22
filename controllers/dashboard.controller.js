@@ -1,7 +1,6 @@
 // controllers/admin/dashboard.controller.js
 const admin = require('firebase-admin');
 
-// Đảm bảo ORDER_STATUS_MAP được định nghĩa ở đây
 const ORDER_STATUS_MAP = {
     "Chờ xác nhận": "Chờ xác nhận",
     "Xác nhận": "Xác nhận",
@@ -10,7 +9,7 @@ const ORDER_STATUS_MAP = {
     "Đã hủy": "Đã hủy"
 };
 
-module.exports.dashboard = async (req, res) => { // Đã đổi tên hàm từ index thành dashboard
+module.exports.dashboard = async (req, res) => {
     try {
         // 1. Lấy tổng số đơn hàng
         const ordersSnapshot = await admin.database().ref('orders').once('value');

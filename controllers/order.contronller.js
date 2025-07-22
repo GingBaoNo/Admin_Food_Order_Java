@@ -7,10 +7,10 @@ const ORDER_STATUS_MAP = {
     "Xác nhận": "Xác nhận",
     "Đang giao hàng": "Đang giao hàng",
     "Giao hàng thành công": "Giao hàng thành công",
-    "Đã hủy": "Đã hủy" // Thêm trạng thái hủy nếu bạn muốn sử dụng
+    "Đã hủy": "Đã hủy" 
 };
 
-// Hàm chuyển đổi tiếng Việt có dấu thành không dấu
+
 function removeVietnameseDiacritics(str) {
     if (typeof str !== 'string') {
         return str;
@@ -137,9 +137,7 @@ module.exports.detail = async (req, res) => {
             return res.redirect(`${process.env.PREFIX_ADMIN}/orders`);
         }
 
-        // Xử lý trường `items` để hiển thị đẹp hơn
-        // `items` đang là một chuỗi như "Phở (49.999 VNĐ) - Số lượng: 2\nBánh Cuốn (29.999 VNĐ) - Số lượng: 1"
-        // Chúng ta muốn phân tích nó thành một mảng các đối tượng để dễ hiển thị trong Pug
+
         let parsedItems = [];
         if (order.items && typeof order.items === 'string') {
             const itemLines = order.items.split('\n');
@@ -162,10 +160,10 @@ module.exports.detail = async (req, res) => {
 
         res.render('pages/orders/detail', {
             pageTitle: `Chi tiết đơn hàng - ${order.orderCode}`,
-            order: { id, ...order }, // Truyền order kèm theo id
-            parsedItems: parsedItems, // Truyền danh sách sản phẩm đã phân tích
+            order: { id, ...order }, 
+            parsedItems: parsedItems,
             messages: req.flash(),
-            ORDER_STATUS_MAP: ORDER_STATUS_MAP // Truyền map trạng thái để hiển thị tên tiếng Việt
+            ORDER_STATUS_MAP: ORDER_STATUS_MAP 
         });
 
     } catch (error) {
