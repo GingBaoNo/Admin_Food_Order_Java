@@ -5,7 +5,6 @@ const admin = require('../config/firebase');
 const bucket = admin.storage().bucket();
 const PATCH_ADMIN = "/admin";
 
-// Hàm chuyển tiếng Việt có dấu sang không dấu (để tìm kiếm, sắp xếp)
 function removeVietnameseDiacritics(str) {
     if (typeof str !== 'string') return str;
     str = str.toLowerCase();
@@ -16,7 +15,7 @@ function removeVietnameseDiacritics(str) {
     str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
     str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
     str = str.replace(/đ/g, "d");
-    str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, ""); // Dấu kết hợp
+    str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, ""); 
     str = str.replace(/\u02C6|\u0306|\u031B/g, "");
     str = str.replace(/ + /g, " ");
     return str.trim();
@@ -50,7 +49,7 @@ module.exports = {
                 const [field, order] = sort.split('-');
                 foods.sort((a, b) => {
                     let valueA = a[field], valueB = b[field];
-                    // Vẫn giữ chuyển đổi số cho Price và Position khi sắp xếp, tìm kiếm
+
                     if (field === 'Price' || field === 'Position') {
                         valueA = parseFloat(String(valueA || '0').replace(/[^0-9.]/g, ''));
                         valueB = parseFloat(String(valueB || '0').replace(/[^0-9.]/g, ''));
@@ -97,8 +96,6 @@ module.exports = {
             const categorySnapshot = await admin.database().ref('Category').once('value');
             const categories = categorySnapshot.val() ? Object.values(categorySnapshot.val()) : [];
 
-            // Dữ liệu ví dụ cho Time.
-            // Trong ứng dụng thực tế, bạn sẽ lấy chúng từ các bộ sưu tập 'Times' nếu chúng tồn tại.
             const times = [
                 { Id: 0, Name: "Buổi sáng" },
                 { Id: 1, Name: "Buổi trưa" },
@@ -108,7 +105,7 @@ module.exports = {
             res.render('pages/product/create', {
                 pageTitle: "Thêm sản phẩm mới",
                 categories: categories,
-                times: times // Vẫn truyền dữ liệu thời gian
+                times: times 
             });
         } catch (error) {
             console.error("Error fetching data for create view:", error);
@@ -139,13 +136,10 @@ module.exports = {
                 fs.unlinkSync(tempFilePath);
             }
 
-            // --- ĐÃ BỎ CHUYỂN ĐỔI KIỂU DỮ LIỆU CHO PRICE ---
-            // newFoodData.Price = parseFloat(newFoodData.Price) || 0; // BỎ DÒNG NÀY
-            // Đảm bảo Price được gửi từ form sẽ là string
             if (typeof newFoodData.Price === 'undefined' || newFoodData.Price === null) {
-                newFoodData.Price = ""; // Đặt giá trị mặc định là string rỗng nếu không có
+                newFoodData.Price = ""; 
             } else {
-                newFoodData.Price = String(newFoodData.Price); // Đảm bảo là string
+                newFoodData.Price = String(newFoodData.Price); 
             }
 
             newFoodData.Position = parseInt(newFoodData.Position) || 0;
@@ -223,13 +217,13 @@ module.exports = {
         }
     },
 
-    // [POST] /admin/products/edit/:id (PATCH) // Comments removed per prior request.
+
     editPatch: async (req, res) => {
         try {
             const { id } = req.params;
             const updates = { ...req.body };
 
-            // Xử lý ảnh mới nếu có upload
+
             if (req.file) {
                 const filename = `${Date.now()}-${req.file.originalname}`;
                 const tempDir = path.join(__dirname, '../temp');
@@ -261,8 +255,7 @@ module.exports = {
                 }
             }
 
-            // Chuyển đổi dữ liệu từ form về đúng kiểu (nếu cần)
-            // Giá (Price) được lưu dưới dạng string trong Firebase, nên không cần parseFloat
+
             if (updates.Price) {
                 updates.Price = String(updates.Price); // Đảm bảo là string
             }
@@ -273,11 +266,9 @@ module.exports = {
             if (updates.TimeValue) updates.TimeValue = parseInt(updates.TimeValue);
             if (updates.Star) updates.Star = parseFloat(updates.Star);
             if (typeof updates.BestFood !== 'undefined') {
-                updates.BestFood = updates.BestFood === 'true'; // Chuyển đổi string "true"/"false" sang boolean
+                updates.BestFood = updates.BestFood === 'true'; 
             }
-            updates.UpdatedAt = admin.database.ServerValue.TIMESTAMP; // Cập nhật thời gian cuối cùng chỉnh sửa
-
-            // Thực hiện cập nhật vào Firebase Realtime Database
+            updates.UpdatedAt = admin.database.ServerValue.TIMESTAMP;
             await admin.database().ref(`Foods/${id}`).update(updates);
 
             req.flash("success", "Cập nhật sản phẩm thành công!");
